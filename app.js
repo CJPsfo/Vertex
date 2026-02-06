@@ -6,6 +6,7 @@ const syncStatus = document.querySelector("#sync-status");
 const intakeList = document.querySelector("#intake-list");
 const timeline = document.querySelector("#timeline");
 const planner = document.querySelector(".planner");
+const blockList = document.querySelector("#block-list");
 const revealItems = document.querySelectorAll(".reveal");
 const calendarGrid = document.querySelector("#calendar-grid");
 const calendarTabs = document.querySelectorAll("[data-view]");
@@ -15,18 +16,12 @@ const navLinks = document.querySelectorAll(".sidebar nav a");
 const requiresAuth = document.body.classList.contains("requires-auth");
 const focusModal = document.querySelector("#focus-modal");
 const focusForm = document.querySelector("#focus-form");
+const focusIdField = document.querySelector("#focus-id");
 const focusStatus = document.querySelector("#focus-status");
 const modalCloseButtons = document.querySelectorAll("[data-modal-close]");
 
 const formatTime = (date) =>
   date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-
-const calendarData = {
-  day: [],
-  week: [],
-  month: [],
-  year: [],
-};
 
 const calendarCells = {
   day: ["Today"],
@@ -51,7 +46,22 @@ const levelThreshold = {
 };
 
 let currentView = "day";
-const focusBlocks = [];
+const STORAGE_KEY = "vertex_focus_blocks";
+
+const loadBlocks = () => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (error) {
+    return [];
+  }
+};
+
+const saveBlocks = (blocks) => {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(blocks));
+};
+
+let focusBlocks = loadBlocks();
 
 const renderCalendar = (view) => {
   if (!calendarGrid) {
@@ -62,6 +72,45 @@ const renderCalendar = (view) => {
   calendarGrid.className = `calendar-grid view-${view}`;
   calendarGrid.innerHTML = "";
 
+  const buckets = {};
+  calendarCells[view].forEach((label) => {
+    buckets[label] = [];
+  });
+
+  const mapToBucket = (block) => {
+    if (!block?.date) {
+      return calendarCells[view][0];
+    }
+    const date = new Date(block.date);
+    if (Number.isNaN(date.getTime())) {
+      return calendarCells[view][0];
+    }
+
+    if (view === "day") {
+      return calendarCells[view][0];
+    }
+    if (view === "week") {
+      return calendarCells.week[date.getDay() === 0 ? 6 : date.getDay() - 1];
+    }
+    if (view === "month") {
+      const weekIndex = Math.min(6, Math.floor((date.getDate() - 1) / 7));
+      return calendarCells.month[weekIndex];
+    }
+    if (view === "year") {
+      const quarter = Math.floor(date.getMonth() / 3);
+      return calendarCells.year[quarter];
+    }
+    return calendarCells[view][0];
+  };
+
+  focusBlocks.forEach((block) => {
+    if (!levelThreshold[view].includes(block.priority)) {
+      return;
+    }
+    const bucket = mapToBucket(block);
+    buckets[bucket]?.push(block);
+  });
+
   calendarCells[view].forEach((label) => {
     const cell = document.createElement("div");
     cell.className = "calendar-cell";
@@ -71,9 +120,7 @@ const renderCalendar = (view) => {
     title.textContent = label;
     cell.appendChild(title);
 
-    const items = calendarData[view].filter((item) =>
-      levelThreshold[view].includes(item.level)
-    );
+    const items = buckets[label] || [];
 
     if (!items.length) {
       const empty = document.createElement("div");
@@ -83,8 +130,8 @@ const renderCalendar = (view) => {
     } else {
       items.forEach((item) => {
         const entry = document.createElement("div");
-        entry.className = `calendar-item ${item.level}`;
-        entry.textContent = item.label;
+        entry.className = `calendar-item ${item.priority}`;
+        entry.textContent = item.title;
         cell.appendChild(entry);
       });
     }
@@ -195,26 +242,44 @@ syncButton?.addEventListener("click", () => {
   }, 700);
 });
 
-focusButton?.addEventListener("click", () => {
-  if (!focusModal) {
+const openModal = (block) => {
+  if (!focusModal || !focusForm) {
     return;
   }
 
-  if (focusForm) {
-    const now = new Date();
-    const pad = (value) => String(value).padStart(2, "0");
-    const dateValue = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(
-      now.getDate()
-    )}`;
-    const timeValue = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  const now = new Date();
+  const pad = (value) => String(value).padStart(2, "0");
+  const dateValue = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(
+    now.getDate()
+  )}`;
+  const timeValue = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+  if (block) {
+    focusForm.title.value = block.title;
+    focusForm.date.value = block.date || dateValue;
+    focusForm.time.value = block.time || timeValue;
+    focusForm.duration.value = block.duration || 60;
+    focusForm.priority.value = block.priority || "medium";
+    focusForm.notes.value = block.notes || "";
+    if (focusIdField) {
+      focusIdField.value = block.id;
+    }
+    focusStatus.textContent = "Update your focus block details.";
+  } else {
+    focusForm.reset();
     focusForm.date.value = dateValue;
     focusForm.time.value = timeValue;
+    if (focusIdField) {
+      focusIdField.value = "";
+    }
+    focusStatus.textContent = "Blocks appear immediately in your timeline.";
   }
 
   focusModal.classList.add("open");
   focusModal.setAttribute("aria-hidden", "false");
-  focusStatus.textContent = "Blocks appear immediately in your timeline.";
-});
+};
+
+focusButton?.addEventListener("click", () => openModal());
 
 setTimeout(() => {
   highlight?.classList.add("pulse");
@@ -246,11 +311,152 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-focusForm?.addEventListener("submit", (event) => {
-  event.preventDefault();
+const renderTimeline = () => {
   if (!timeline) {
     return;
   }
+  timeline.innerHTML = "";
+  if (!focusBlocks.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty";
+    empty.textContent = "No focus blocks yet.";
+    timeline.appendChild(empty);
+    return;
+  }
+
+  focusBlocks.forEach((item) => {
+    const row = document.createElement("div");
+    row.classList.add("new");
+
+    const timeStamp = document.createElement("span");
+    timeStamp.textContent = item.time;
+
+    const label = document.createElement("strong");
+    label.textContent = `${item.title} · ${item.duration}m`;
+
+    const actions = document.createElement("div");
+    actions.className = "block-actions";
+
+    const edit = document.createElement("button");
+    edit.type = "button";
+    edit.className = "primary";
+    edit.textContent = "Edit";
+    edit.addEventListener("click", () => openModal(item));
+
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.textContent = "Delete";
+    remove.addEventListener("click", () => deleteBlock(item.id));
+
+    actions.append(edit, remove);
+    row.append(timeStamp, label, actions);
+    timeline.appendChild(row);
+  });
+};
+
+const renderPlanner = () => {
+  if (!planner) {
+    return;
+  }
+  planner.innerHTML = "";
+  if (!focusBlocks.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty";
+    empty.textContent = "No focus blocks scheduled yet.";
+    planner.appendChild(empty);
+    return;
+  }
+
+  focusBlocks.forEach((item) => {
+    const plannerItem = document.createElement("div");
+    plannerItem.className = "block-item";
+
+    const title = document.createElement("strong");
+    title.textContent = item.title;
+
+    const meta = document.createElement("div");
+    meta.className = "block-meta";
+    meta.textContent = `${item.date} · ${item.time} · ${item.duration}m · ${item.priority.toUpperCase()}`;
+
+    const actions = document.createElement("div");
+    actions.className = "block-actions";
+
+    const edit = document.createElement("button");
+    edit.type = "button";
+    edit.className = "primary";
+    edit.textContent = "Edit";
+    edit.addEventListener("click", () => openModal(item));
+
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.textContent = "Delete";
+    remove.addEventListener("click", () => deleteBlock(item.id));
+
+    actions.append(edit, remove);
+    plannerItem.append(title, meta, actions);
+    planner.appendChild(plannerItem);
+  });
+};
+
+const renderBlockList = () => {
+  if (!blockList) {
+    return;
+  }
+  blockList.innerHTML = "";
+  if (!focusBlocks.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty";
+    empty.textContent = "No focus blocks scheduled yet.";
+    blockList.appendChild(empty);
+    return;
+  }
+
+  focusBlocks.forEach((item) => {
+    const entry = document.createElement("div");
+    entry.className = "block-item";
+
+    const title = document.createElement("strong");
+    title.textContent = item.title;
+
+    const meta = document.createElement("div");
+    meta.className = "block-meta";
+    meta.textContent = `${item.date} · ${item.time} · ${item.duration}m · ${item.priority.toUpperCase()}`;
+
+    const actions = document.createElement("div");
+    actions.className = "block-actions";
+
+    const edit = document.createElement("button");
+    edit.type = "button";
+    edit.className = "primary";
+    edit.textContent = "Edit";
+    edit.addEventListener("click", () => openModal(item));
+
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.textContent = "Delete";
+    remove.addEventListener("click", () => deleteBlock(item.id));
+
+    actions.append(edit, remove);
+    entry.append(title, meta, actions);
+    blockList.appendChild(entry);
+  });
+};
+
+const renderAll = () => {
+  renderTimeline();
+  renderPlanner();
+  renderBlockList();
+  renderCalendar(currentView);
+};
+
+const deleteBlock = (id) => {
+  focusBlocks = focusBlocks.filter((block) => block.id !== id);
+  saveBlocks(focusBlocks);
+  renderAll();
+};
+
+focusForm?.addEventListener("submit", (event) => {
+  event.preventDefault();
 
   const title = focusForm.title.value.trim() || "Focus Block";
   const date = focusForm.date.value;
@@ -260,72 +466,25 @@ focusForm?.addEventListener("submit", (event) => {
   const notes = focusForm.notes.value.trim();
 
   const block = {
+    id: focusIdField?.value || crypto.randomUUID?.() || String(Date.now()),
     title,
     date,
     time: time || formatTime(new Date()),
     duration,
     priority,
     notes,
+    createdAt: Date.now(),
   };
 
-  focusBlocks.unshift(block);
+  const existingIndex = focusBlocks.findIndex((item) => item.id === block.id);
+  if (existingIndex >= 0) {
+    focusBlocks[existingIndex] = { ...focusBlocks[existingIndex], ...block };
+  } else {
+    focusBlocks.unshift(block);
+  }
 
-  const renderTimeline = () => {
-    if (!timeline) {
-      return;
-    }
-    timeline.innerHTML = "";
-    if (!focusBlocks.length) {
-      const empty = document.createElement("div");
-      empty.className = "empty";
-      empty.textContent = "No focus blocks yet.";
-      timeline.appendChild(empty);
-      return;
-    }
-
-    focusBlocks.forEach((item) => {
-      const row = document.createElement("div");
-      row.classList.add("new");
-
-      const timeStamp = document.createElement("span");
-      timeStamp.textContent = item.time;
-
-      const label = document.createElement("strong");
-      label.textContent = `${item.title} · ${item.duration}m`;
-
-      row.append(timeStamp, label);
-      timeline.appendChild(row);
-    });
-  };
-
-  const renderPlanner = () => {
-    if (!planner) {
-      return;
-    }
-    planner.innerHTML = "";
-    if (!focusBlocks.length) {
-      const empty = document.createElement("div");
-      empty.className = "empty";
-      empty.textContent = "No focus blocks scheduled yet.";
-      planner.appendChild(empty);
-      return;
-    }
-
-    focusBlocks.forEach((item) => {
-      const plannerItem = document.createElement("div");
-      plannerItem.textContent = `${item.title} · ${item.duration}m · ${item.priority.toUpperCase()}`;
-      planner.appendChild(plannerItem);
-    });
-  };
-
-  renderTimeline();
-  renderPlanner();
-
-  calendarData.day.unshift({ label: title, level: priority });
-  calendarData.week.unshift({ label: title, level: priority });
-  calendarData.month.unshift({ label: title, level: priority });
-  calendarData.year.unshift({ label: title, level: priority });
-  renderCalendar(currentView);
+  saveBlocks(focusBlocks);
+  renderAll();
 
   focusStatus.textContent = notes
     ? "Focus block added with notes."
@@ -333,3 +492,5 @@ focusForm?.addEventListener("submit", (event) => {
   focusForm.reset();
   closeModal();
 });
+
+renderAll();

@@ -52,6 +52,12 @@
         </article>
 
         <article class="card">
+          <h3>Focus Blocks</h3>
+          <p>All scheduled blocks across your planner.</p>
+          <div class="block-list" id="block-list"></div>
+        </article>
+
+        <article class="card">
           <h3>Top Gains</h3>
           <p>No gains tracked yet.</p>
           <ul></ul>
@@ -63,6 +69,59 @@
         </article>
       </section>
     </main>
+
+    <div class="modal" id="focus-modal" aria-hidden="true">
+      <div class="modal-backdrop" data-modal-close></div>
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="focus-modal-title">
+        <div class="modal-head">
+          <div>
+            <p class="eyebrow">Focus Block</p>
+            <h2 id="focus-modal-title">Add a Focus Block</h2>
+          </div>
+          <button class="ghost" type="button" data-modal-close>Close</button>
+        </div>
+        <form id="focus-form" class="modal-form">
+          <input type="hidden" id="focus-id" name="id" />
+          <label for="focus-title">Title</label>
+          <input id="focus-title" name="title" type="text" placeholder="Deep work session" required />
+
+          <div class="modal-row">
+            <div>
+              <label for="focus-date">Date</label>
+              <input id="focus-date" name="date" type="date" required />
+            </div>
+            <div>
+              <label for="focus-time">Start time</label>
+              <input id="focus-time" name="time" type="time" required />
+            </div>
+          </div>
+
+          <div class="modal-row">
+            <div>
+              <label for="focus-duration">Duration (minutes)</label>
+              <input id="focus-duration" name="duration" type="number" min="15" max="240" step="15" value="60" required />
+            </div>
+            <div>
+              <label for="focus-priority">Priority</label>
+              <select id="focus-priority" name="priority">
+                <option value="high">High</option>
+                <option value="medium" selected>Medium</option>
+                <option value="low">Low</option>
+              </select>
+            </div>
+          </div>
+
+          <label for="focus-notes">Notes</label>
+          <textarea id="focus-notes" name="notes" rows="3" placeholder="Optional context"></textarea>
+
+          <div class="modal-actions">
+            <button class="ghost" type="button" data-modal-close>Cancel</button>
+            <button type="submit">Save Focus Block</button>
+          </div>
+          <p class="modal-status" id="focus-status">Blocks appear immediately in your planner.</p>
+        </form>
+      </div>
+    </div>
 
     <script src="app.js"></script>
   </body>
