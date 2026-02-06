@@ -26,6 +26,7 @@ const modalCloseButtons = document.querySelectorAll("[data-modal-close]");
 const assignmentModal = document.querySelector("#assignment-modal");
 const assignmentForm = document.querySelector("#assignment-form");
 const assignmentIdField = document.querySelector("#assignment-id");
+const assignmentTurnIn = document.querySelector("#assignment-turnin");
 const assignmentStatus = document.querySelector("#assignment-status");
 const assignmentCloseButtons = document.querySelectorAll("[data-assignment-close]");
 
@@ -340,6 +341,9 @@ const openAssignmentModal = (assignment) => {
     assignmentForm.title.value = assignment.title;
     assignmentForm.due.value = assignment.due || dateValue;
     assignmentForm.hours.value = assignment.hours || 4;
+    if (assignmentTurnIn) {
+      assignmentTurnIn.value = assignment.turnIn || "online";
+    }
     if (assignmentIdField) {
       assignmentIdField.value = assignment.id;
     }
@@ -347,6 +351,9 @@ const openAssignmentModal = (assignment) => {
   } else {
     assignmentForm.reset();
     assignmentForm.due.value = dateValue;
+    if (assignmentTurnIn) {
+      assignmentTurnIn.value = "online";
+    }
     if (assignmentIdField) {
       assignmentIdField.value = "";
     }
@@ -622,7 +629,9 @@ const renderAssignmentList = () => {
 
     const meta = document.createElement("div");
     meta.className = "assignment-meta";
-    meta.textContent = `Due ${assignment.due} · Est ${assignment.hours}h · Scheduled ${Math.round(
+    const turnInLabel =
+      assignment.turnIn === "physical" ? "Physical" : "Online";
+    meta.textContent = `Due ${assignment.due} · Est ${assignment.hours}h · ${turnInLabel} turn-in · Scheduled ${Math.round(
       totalMinutes
     )}m · Completed ${Math.round(completedMinutes)}m (${completionPct}%)`;
 
@@ -735,12 +744,14 @@ assignmentForm?.addEventListener("submit", (event) => {
   const title = assignmentForm.title.value.trim();
   const due = assignmentForm.due.value;
   const hours = assignmentForm.hours.value;
+  const turnIn = assignmentTurnIn ? assignmentTurnIn.value : "online";
 
   const assignment = {
     id: assignmentIdField?.value || crypto.randomUUID?.() || String(Date.now()),
     title,
     due,
     hours,
+    turnIn,
     createdAt: Date.now(),
   };
 
