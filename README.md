@@ -1,18 +1,14 @@
-# Vertex Calendar (Single-User)
+# Vertex Planner (Demo)
 
-## Setup
+## Quick Start
 
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
-2. Start the server:
-   ```bash
-   npm run dev
-   ```
-3. Open: `http://localhost:3000`
+1. Open `index.html` in your browser.
+2. Click “Launch the Command Center.”
+3. Use the demo credentials shown on the login page:
+   - Email: `demo@vertex.app`
+   - Password: `vertex-demo`
 
 ## Notes
 
-- Single-user account only. The first signup is the only account allowed.
-- Account data is stored locally in `data/user.json`.
+- Demo authentication is client-side only (localStorage).
+- The marketing site is always the entry point.

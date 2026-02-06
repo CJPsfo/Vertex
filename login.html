@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Vertex | Sign In</title>
+    <title>Vertex | Demo Login</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -19,21 +19,21 @@
           <span class="logo-mark">Vx</span>
           <span class="logo-text">Vertex</span>
         </div>
-        <h1>Sign in to your Vertex workspace.</h1>
+        <h1>Access the Vertex planner demo.</h1>
         <p>
-          A closed-loop calendar engine connecting priorities to real-time
-          academic execution.
+          A calendar system that turns commitments into a schedule that gets
+          executed.
         </p>
       </section>
 
       <section class="panel">
         <div class="panel-head">
-          <h2>Welcome</h2>
-          <p>Create your single-user account or sign in below.</p>
+          <h2>Demo Sign In</h2>
+          <p>Use the demo credentials below to enter the product.</p>
         </div>
-        <div class="mode-toggle">
-          <button class="mode active" type="button" data-mode="login">Sign in</button>
-          <button class="mode" type="button" data-mode="signup">Create account</button>
+        <div class="demo-credentials" aria-live="polite">
+          <p><strong>Demo Email:</strong> demo@vertex.app</p>
+          <p><strong>Demo Password:</strong> vertex-demo</p>
         </div>
         <form id="login-form" class="login-form">
           <label for="email">Email</label>
@@ -41,7 +41,7 @@
             id="email"
             name="email"
             type="email"
-            placeholder="you@vertex.edu"
+            placeholder="demo@vertex.app"
             autocomplete="email"
             required
           />
@@ -51,13 +51,13 @@
             id="password"
             name="password"
             type="password"
-            placeholder="Enter password"
+            placeholder="vertex-demo"
             autocomplete="current-password"
             required
           />
 
           <button type="submit" id="submit-button">Enter the Interface</button>
-          <p id="status" class="status">Single-user mode. First signup wins.</p>
+          <p id="status" class="status">Demo mode only.</p>
         </form>
         <div class="panel-footer">
           <a href="index.html">Return to marketing site</a>

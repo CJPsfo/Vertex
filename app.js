@@ -11,6 +11,7 @@ const calendarTabs = document.querySelectorAll("[data-view]");
 const profileName = document.querySelector("#profile-name");
 const logoutButton = document.querySelector("#logout");
 const navLinks = document.querySelectorAll(".sidebar nav a");
+const requiresAuth = document.body.classList.contains("requires-auth");
 
 const formatTime = (date) =>
   date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -135,29 +136,31 @@ navLinks.forEach((link) => {
   });
 });
 
-const ensureSession = async () => {
-  try {
-    const response = await fetch("/api/session");
-    const payload = await response.json();
-    if (!payload.authenticated) {
-      window.location.href = "login.html";
-      return;
-    }
+const ensureSession = () => {
+  if (!requiresAuth) {
+    return;
+  }
 
+  const raw = localStorage.getItem("vertex_demo_auth");
+  if (!raw) {
+    window.location.href = "login.html";
+    return;
+  }
+
+  try {
+    const payload = JSON.parse(raw);
     if (profileName) {
-      profileName.textContent = payload.email;
+      profileName.textContent = payload.email || "Demo User";
     }
   } catch (error) {
+    localStorage.removeItem("vertex_demo_auth");
     window.location.href = "login.html";
   }
 };
 
-logoutButton?.addEventListener("click", async () => {
-  try {
-    await fetch("/api/logout", { method: "POST" });
-  } finally {
-    window.location.href = "login.html";
-  }
+logoutButton?.addEventListener("click", () => {
+  localStorage.removeItem("vertex_demo_auth");
+  window.location.href = "login.html";
 });
 
 syncButton?.addEventListener("click", () => {
@@ -201,7 +204,7 @@ focusButton?.addEventListener("click", () => {
   time.textContent = formatTime(now);
 
   const label = document.createElement("strong");
-  label.textContent = "Targeted Focus · Deep Work";
+  label.textContent = "Focus Block · Deep Work";
 
   row.append(time, label);
   timeline.prepend(row);
