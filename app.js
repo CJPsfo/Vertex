@@ -5,6 +5,7 @@ const lastSync = document.querySelector("#last-sync");
 const syncStatus = document.querySelector("#sync-status");
 const intakeList = document.querySelector("#intake-list");
 const timeline = document.querySelector("#timeline");
+const planner = document.querySelector(".planner");
 const revealItems = document.querySelectorAll(".reveal");
 const calendarGrid = document.querySelector("#calendar-grid");
 const calendarTabs = document.querySelectorAll("[data-view]");
@@ -12,6 +13,10 @@ const profileName = document.querySelector("#profile-name");
 const logoutButton = document.querySelector("#logout");
 const navLinks = document.querySelectorAll(".sidebar nav a");
 const requiresAuth = document.body.classList.contains("requires-auth");
+const focusModal = document.querySelector("#focus-modal");
+const focusForm = document.querySelector("#focus-form");
+const focusStatus = document.querySelector("#focus-status");
+const modalCloseButtons = document.querySelectorAll("[data-modal-close]");
 
 const formatTime = (date) =>
   date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -45,11 +50,14 @@ const levelThreshold = {
   year: ["high"],
 };
 
+let currentView = "day";
+
 const renderCalendar = (view) => {
   if (!calendarGrid) {
     return;
   }
 
+  currentView = view;
   calendarGrid.className = `calendar-grid view-${view}`;
   calendarGrid.innerHTML = "";
 
@@ -187,10 +195,68 @@ syncButton?.addEventListener("click", () => {
 });
 
 focusButton?.addEventListener("click", () => {
-  const now = new Date();
+  if (!focusModal) {
+    return;
+  }
+
+  if (focusForm) {
+    const now = new Date();
+    const pad = (value) => String(value).padStart(2, "0");
+    const dateValue = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(
+      now.getDate()
+    )}`;
+    const timeValue = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    focusForm.date.value = dateValue;
+    focusForm.time.value = timeValue;
+  }
+
+  focusModal.classList.add("open");
+  focusModal.setAttribute("aria-hidden", "false");
+  focusStatus.textContent = "Blocks appear immediately in your timeline.";
+});
+
+setTimeout(() => {
+  highlight?.classList.add("pulse");
+}, 500);
+
+ensureSession();
+
+const closeModal = () => {
+  if (!focusModal) {
+    return;
+  }
+  focusModal.classList.remove("open");
+  focusModal.setAttribute("aria-hidden", "true");
+};
+
+modalCloseButtons.forEach((button) => {
+  button.addEventListener("click", closeModal);
+});
+
+focusModal?.addEventListener("click", (event) => {
+  if (event.target?.classList.contains("modal-backdrop")) {
+    closeModal();
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && focusModal?.classList.contains("open")) {
+    closeModal();
+  }
+});
+
+focusForm?.addEventListener("submit", (event) => {
+  event.preventDefault();
   if (!timeline) {
     return;
   }
+
+  const title = focusForm.title.value.trim() || "Focus Block";
+  const date = focusForm.date.value;
+  const time = focusForm.time.value;
+  const duration = focusForm.duration.value;
+  const priority = focusForm.priority.value;
+  const notes = focusForm.notes.value.trim();
 
   const empty = timeline.querySelector(".empty");
   if (empty) {
@@ -200,18 +266,30 @@ focusButton?.addEventListener("click", () => {
   const row = document.createElement("div");
   row.classList.add("new");
 
-  const time = document.createElement("span");
-  time.textContent = formatTime(now);
+  const timeStamp = document.createElement("span");
+  timeStamp.textContent = time ? time : formatTime(new Date());
 
   const label = document.createElement("strong");
-  label.textContent = "Focus Block · Deep Work";
+  label.textContent = `${title} · ${duration}m`;
 
-  row.append(time, label);
+  row.append(timeStamp, label);
   timeline.prepend(row);
+
+  if (planner) {
+    const plannerItem = document.createElement("div");
+    plannerItem.textContent = `${title} · ${duration}m · ${priority.toUpperCase()}`;
+    planner.prepend(plannerItem);
+  }
+
+  calendarData.day.unshift({ label: title, level: priority });
+  calendarData.week.unshift({ label: title, level: priority });
+  calendarData.month.unshift({ label: title, level: priority });
+  calendarData.year.unshift({ label: title, level: priority });
+  renderCalendar(currentView);
+
+  focusStatus.textContent = notes
+    ? "Focus block added with notes."
+    : "Focus block added.";
+  focusForm.reset();
+  closeModal();
 });
-
-setTimeout(() => {
-  highlight?.classList.add("pulse");
-}, 500);
-
-ensureSession();
