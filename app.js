@@ -1,12 +1,14 @@
 const highlight = document.querySelector(".highlight");
 const syncButton = document.querySelector('[data-action="sync"]');
 const focusButton = document.querySelector('[data-action="focus"]');
+const assignmentButtons = document.querySelectorAll('[data-action="assignment"]');
 const lastSync = document.querySelector("#last-sync");
 const syncStatus = document.querySelector("#sync-status");
 const intakeList = document.querySelector("#intake-list");
 const timeline = document.querySelector("#timeline");
 const planner = document.querySelector(".planner");
 const blockList = document.querySelector("#block-list");
+const assignmentList = document.querySelector("#assignment-list");
 const revealItems = document.querySelectorAll(".reveal");
 const calendarGrid = document.querySelector("#calendar-grid");
 const calendarTabs = document.querySelectorAll("[data-view]");
@@ -17,8 +19,14 @@ const requiresAuth = document.body.classList.contains("requires-auth");
 const focusModal = document.querySelector("#focus-modal");
 const focusForm = document.querySelector("#focus-form");
 const focusIdField = document.querySelector("#focus-id");
+const focusAssignment = document.querySelector("#focus-assignment");
 const focusStatus = document.querySelector("#focus-status");
 const modalCloseButtons = document.querySelectorAll("[data-modal-close]");
+const assignmentModal = document.querySelector("#assignment-modal");
+const assignmentForm = document.querySelector("#assignment-form");
+const assignmentIdField = document.querySelector("#assignment-id");
+const assignmentStatus = document.querySelector("#assignment-status");
+const assignmentCloseButtons = document.querySelectorAll("[data-assignment-close]");
 
 const formatTime = (date) =>
   date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -47,6 +55,7 @@ const levelThreshold = {
 
 let currentView = "day";
 const STORAGE_KEY = "vertex_focus_blocks";
+const ASSIGNMENT_KEY = "vertex_assignments";
 
 const loadBlocks = () => {
   try {
@@ -62,6 +71,21 @@ const saveBlocks = (blocks) => {
 };
 
 let focusBlocks = loadBlocks();
+
+const loadAssignments = () => {
+  try {
+    const raw = localStorage.getItem(ASSIGNMENT_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (error) {
+    return [];
+  }
+};
+
+const saveAssignments = (assignments) => {
+  localStorage.setItem(ASSIGNMENT_KEY, JSON.stringify(assignments));
+};
+
+let assignments = loadAssignments();
 
 const renderCalendar = (view) => {
   if (!calendarGrid) {
@@ -247,6 +271,8 @@ const openModal = (block) => {
     return;
   }
 
+  renderAssignmentOptions();
+
   const now = new Date();
   const pad = (value) => String(value).padStart(2, "0");
   const dateValue = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(
@@ -261,6 +287,9 @@ const openModal = (block) => {
     focusForm.duration.value = block.duration || 60;
     focusForm.priority.value = block.priority || "medium";
     focusForm.notes.value = block.notes || "";
+    if (focusAssignment) {
+      focusAssignment.value = block.assignmentId || "";
+    }
     if (focusIdField) {
       focusIdField.value = block.id;
     }
@@ -269,6 +298,9 @@ const openModal = (block) => {
     focusForm.reset();
     focusForm.date.value = dateValue;
     focusForm.time.value = timeValue;
+    if (focusAssignment) {
+      focusAssignment.value = "";
+    }
     if (focusIdField) {
       focusIdField.value = "";
     }
@@ -280,6 +312,44 @@ const openModal = (block) => {
 };
 
 focusButton?.addEventListener("click", () => openModal());
+
+const openAssignmentModal = (assignment) => {
+  if (!assignmentModal || !assignmentForm) {
+    return;
+  }
+
+  closeModal();
+
+  const now = new Date();
+  const pad = (value) => String(value).padStart(2, "0");
+  const dateValue = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(
+    now.getDate()
+  )}`;
+
+  if (assignment) {
+    assignmentForm.title.value = assignment.title;
+    assignmentForm.due.value = assignment.due || dateValue;
+    assignmentForm.hours.value = assignment.hours || 4;
+    if (assignmentIdField) {
+      assignmentIdField.value = assignment.id;
+    }
+    assignmentStatus.textContent = "Update assignment details.";
+  } else {
+    assignmentForm.reset();
+    assignmentForm.due.value = dateValue;
+    if (assignmentIdField) {
+      assignmentIdField.value = "";
+    }
+    assignmentStatus.textContent = "Assignments sync across all pages.";
+  }
+
+  assignmentModal.classList.add("open");
+  assignmentModal.setAttribute("aria-hidden", "false");
+};
+
+assignmentButtons.forEach((button) => {
+  button.addEventListener("click", () => openAssignmentModal());
+});
 
 setTimeout(() => {
   highlight?.classList.add("pulse");
@@ -295,8 +365,20 @@ const closeModal = () => {
   focusModal.setAttribute("aria-hidden", "true");
 };
 
+const closeAssignmentModal = () => {
+  if (!assignmentModal) {
+    return;
+  }
+  assignmentModal.classList.remove("open");
+  assignmentModal.setAttribute("aria-hidden", "true");
+};
+
 modalCloseButtons.forEach((button) => {
   button.addEventListener("click", closeModal);
+});
+
+assignmentCloseButtons.forEach((button) => {
+  button.addEventListener("click", closeAssignmentModal);
 });
 
 focusModal?.addEventListener("click", (event) => {
@@ -305,9 +387,18 @@ focusModal?.addEventListener("click", (event) => {
   }
 });
 
+assignmentModal?.addEventListener("click", (event) => {
+  if (event.target?.classList.contains("modal-backdrop")) {
+    closeAssignmentModal();
+  }
+});
+
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && focusModal?.classList.contains("open")) {
     closeModal();
+  }
+  if (event.key === "Escape" && assignmentModal?.classList.contains("open")) {
+    closeAssignmentModal();
   }
 });
 
@@ -332,7 +423,9 @@ const renderTimeline = () => {
     timeStamp.textContent = item.time;
 
     const label = document.createElement("strong");
-    label.textContent = `${item.title} · ${item.duration}m`;
+    label.textContent = `${item.title} · ${item.duration}m${
+      item.assignmentTitle ? ` · ${item.assignmentTitle}` : ""
+    }`;
 
     const actions = document.createElement("div");
     actions.className = "block-actions";
@@ -376,7 +469,9 @@ const renderPlanner = () => {
 
     const meta = document.createElement("div");
     meta.className = "block-meta";
-    meta.textContent = `${item.date} · ${item.time} · ${item.duration}m · ${item.priority.toUpperCase()}`;
+    meta.textContent = `${item.date} · ${item.time} · ${item.duration}m · ${item.priority.toUpperCase()}${
+      item.assignmentTitle ? ` · ${item.assignmentTitle}` : ""
+    }`;
 
     const actions = document.createElement("div");
     actions.className = "block-actions";
@@ -420,7 +515,9 @@ const renderBlockList = () => {
 
     const meta = document.createElement("div");
     meta.className = "block-meta";
-    meta.textContent = `${item.date} · ${item.time} · ${item.duration}m · ${item.priority.toUpperCase()}`;
+    meta.textContent = `${item.date} · ${item.time} · ${item.duration}m · ${item.priority.toUpperCase()}${
+      item.assignmentTitle ? ` · ${item.assignmentTitle}` : ""
+    }`;
 
     const actions = document.createElement("div");
     actions.className = "block-actions";
@@ -442,15 +539,98 @@ const renderBlockList = () => {
   });
 };
 
+const renderAssignmentOptions = () => {
+  if (!focusAssignment) {
+    return;
+  }
+  focusAssignment.innerHTML = "";
+  const emptyOption = document.createElement("option");
+  emptyOption.value = "";
+  emptyOption.textContent = "No assignment";
+  focusAssignment.appendChild(emptyOption);
+
+  assignments.forEach((assignment) => {
+    const option = document.createElement("option");
+    option.value = assignment.id;
+    option.textContent = assignment.title;
+    focusAssignment.appendChild(option);
+  });
+};
+
+const renderAssignmentList = () => {
+  if (!assignmentList) {
+    return;
+  }
+  assignmentList.innerHTML = "";
+  if (!assignments.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty";
+    empty.textContent = "No assignments yet.";
+    assignmentList.appendChild(empty);
+    return;
+  }
+
+  assignments.forEach((assignment) => {
+    const totalMinutes = focusBlocks
+      .filter((block) => block.assignmentId === assignment.id)
+      .reduce((sum, block) => sum + Number(block.duration || 0), 0);
+    const estimatedMinutes = Number(assignment.hours || 0) * 60;
+
+    const card = document.createElement("div");
+    card.className = "assignment-card";
+
+    const title = document.createElement("h4");
+    title.textContent = assignment.title;
+
+    const meta = document.createElement("div");
+    meta.className = "assignment-meta";
+    meta.textContent = `Due ${assignment.due} · Est ${assignment.hours}h · Scheduled ${Math.round(
+      totalMinutes
+    )}m`;
+
+    const actions = document.createElement("div");
+    actions.className = "block-actions";
+
+    const edit = document.createElement("button");
+    edit.type = "button";
+    edit.className = "primary";
+    edit.textContent = "Edit";
+    edit.addEventListener("click", () => openAssignmentModal(assignment));
+
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.textContent = "Delete";
+    remove.addEventListener("click", () => deleteAssignment(assignment.id));
+
+    actions.append(edit, remove);
+    card.append(title, meta, actions);
+    assignmentList.appendChild(card);
+  });
+};
+
 const renderAll = () => {
   renderTimeline();
   renderPlanner();
   renderBlockList();
+  renderAssignmentList();
+  renderAssignmentOptions();
   renderCalendar(currentView);
 };
 
 const deleteBlock = (id) => {
   focusBlocks = focusBlocks.filter((block) => block.id !== id);
+  saveBlocks(focusBlocks);
+  renderAll();
+};
+
+const deleteAssignment = (id) => {
+  assignments = assignments.filter((assignment) => assignment.id !== id);
+  focusBlocks = focusBlocks.map((block) =>
+    block.assignmentId === id
+      ? { ...block, assignmentId: "", assignmentTitle: "" }
+      : block
+  );
+  saveAssignments(assignments);
   saveBlocks(focusBlocks);
   renderAll();
 };
@@ -464,6 +644,10 @@ focusForm?.addEventListener("submit", (event) => {
   const duration = focusForm.duration.value;
   const priority = focusForm.priority.value;
   const notes = focusForm.notes.value.trim();
+  const assignmentId = focusAssignment?.value || "";
+  const assignmentMatch = assignments.find(
+    (assignment) => assignment.id === assignmentId
+  );
 
   const block = {
     id: focusIdField?.value || crypto.randomUUID?.() || String(Date.now()),
@@ -473,6 +657,8 @@ focusForm?.addEventListener("submit", (event) => {
     duration,
     priority,
     notes,
+    assignmentId,
+    assignmentTitle: assignmentMatch ? assignmentMatch.title : "",
     createdAt: Date.now(),
   };
 
@@ -491,6 +677,49 @@ focusForm?.addEventListener("submit", (event) => {
     : "Focus block added.";
   focusForm.reset();
   closeModal();
+});
+
+assignmentForm?.addEventListener("submit", (event) => {
+  event.preventDefault();
+
+  const title = assignmentForm.title.value.trim();
+  const due = assignmentForm.due.value;
+  const hours = assignmentForm.hours.value;
+
+  const assignment = {
+    id: assignmentIdField?.value || crypto.randomUUID?.() || String(Date.now()),
+    title,
+    due,
+    hours,
+    createdAt: Date.now(),
+  };
+
+  const existingIndex = assignments.findIndex(
+    (item) => item.id === assignment.id
+  );
+  if (existingIndex >= 0) {
+    assignments[existingIndex] = { ...assignments[existingIndex], ...assignment };
+  } else {
+    assignments.unshift(assignment);
+  }
+
+  focusBlocks = focusBlocks.map((block) =>
+    block.assignmentId === assignment.id
+      ? { ...block, assignmentTitle: assignment.title }
+      : block
+  );
+
+  saveAssignments(assignments);
+  saveBlocks(focusBlocks);
+  renderAll();
+
+  assignmentStatus.textContent = "Assignment saved.";
+  assignmentForm.reset();
+  closeAssignmentModal();
+
+  if (focusAssignment) {
+    focusAssignment.value = assignment.id;
+  }
 });
 
 renderAll();

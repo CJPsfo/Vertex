@@ -38,6 +38,7 @@
         </div>
         <div class="header-actions">
           <button class="ghost" data-action="sync">Sync Inputs</button>
+          <button class="ghost" data-action="assignment">New Assignment</button>
         </div>
       </header>
 
@@ -114,11 +115,54 @@
           <label for="focus-notes">Notes</label>
           <textarea id="focus-notes" name="notes" rows="3" placeholder="Optional context"></textarea>
 
+          <div>
+            <label for="focus-assignment">Assignment</label>
+            <div class="assignment-row">
+              <select id="focus-assignment" name="assignment"></select>
+              <button class="ghost" type="button" data-action="assignment">New Assignment</button>
+            </div>
+          </div>
+
           <div class="modal-actions">
             <button class="ghost" type="button" data-modal-close>Cancel</button>
             <button type="submit">Save Focus Block</button>
           </div>
           <p class="modal-status" id="focus-status">Blocks appear immediately in your planner.</p>
+        </form>
+      </div>
+    </div>
+
+    <div class="modal" id="assignment-modal" aria-hidden="true">
+      <div class="modal-backdrop" data-assignment-close></div>
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="assignment-modal-title">
+        <div class="modal-head">
+          <div>
+            <p class="eyebrow">Assignment</p>
+            <h2 id="assignment-modal-title">Add an Assignment</h2>
+          </div>
+          <button class="ghost" type="button" data-assignment-close>Close</button>
+        </div>
+        <form id="assignment-form" class="modal-form">
+          <input type="hidden" id="assignment-id" name="id" />
+          <label for="assignment-title">Assignment title</label>
+          <input id="assignment-title" name="title" type="text" placeholder="AP Calculus problem set" required />
+
+          <div class="modal-row">
+            <div>
+              <label for="assignment-due">Due date</label>
+              <input id="assignment-due" name="due" type="date" required />
+            </div>
+            <div>
+              <label for="assignment-hours">Estimated hours</label>
+              <input id="assignment-hours" name="hours" type="number" min="1" max="40" step="1" value="4" required />
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button class="ghost" type="button" data-assignment-close>Cancel</button>
+            <button type="submit">Save Assignment</button>
+          </div>
+          <p class="modal-status" id="assignment-status">Assignments sync across all pages.</p>
         </form>
       </div>
     </div>

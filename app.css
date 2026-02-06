@@ -246,6 +246,40 @@ body {
   color: var(--muted);
 }
 
+.assignment-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.assignment-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.assignment-card {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  padding: 12px 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.assignment-card h4 {
+  margin: 0;
+}
+
+.assignment-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
 .grid {
   margin-top: 32px;
   display: grid;
