@@ -246,6 +246,20 @@ body {
   color: var(--muted);
 }
 
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.checkbox-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+
 .assignment-row {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -277,6 +291,11 @@ body {
   flex-wrap: wrap;
   gap: 10px;
   font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.assignment-card.is-complete h4 {
+  text-decoration: line-through;
   color: var(--muted);
 }
 
@@ -513,6 +532,20 @@ body {
 .block-actions button.primary {
   border-color: rgba(27, 91, 255, 0.4);
   color: var(--accent-2);
+}
+
+.is-complete strong {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
+.is-complete .block-meta {
+  color: rgba(91, 100, 117, 0.7);
+}
+
+.calendar-item.completed {
+  opacity: 0.55;
+  text-decoration: line-through;
 }
 
 .wide {

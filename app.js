@@ -20,6 +20,7 @@ const focusModal = document.querySelector("#focus-modal");
 const focusForm = document.querySelector("#focus-form");
 const focusIdField = document.querySelector("#focus-id");
 const focusAssignment = document.querySelector("#focus-assignment");
+const focusCompleted = document.querySelector("#focus-completed");
 const focusStatus = document.querySelector("#focus-status");
 const modalCloseButtons = document.querySelectorAll("[data-modal-close]");
 const assignmentModal = document.querySelector("#assignment-modal");
@@ -155,6 +156,9 @@ const renderCalendar = (view) => {
       items.forEach((item) => {
         const entry = document.createElement("div");
         entry.className = `calendar-item ${item.priority}`;
+        if (item.completed) {
+          entry.classList.add("completed");
+        }
         entry.textContent = item.title;
         cell.appendChild(entry);
       });
@@ -290,6 +294,9 @@ const openModal = (block) => {
     if (focusAssignment) {
       focusAssignment.value = block.assignmentId || "";
     }
+    if (focusCompleted) {
+      focusCompleted.checked = Boolean(block.completed);
+    }
     if (focusIdField) {
       focusIdField.value = block.id;
     }
@@ -300,6 +307,9 @@ const openModal = (block) => {
     focusForm.time.value = timeValue;
     if (focusAssignment) {
       focusAssignment.value = "";
+    }
+    if (focusCompleted) {
+      focusCompleted.checked = false;
     }
     if (focusIdField) {
       focusIdField.value = "";
@@ -418,6 +428,7 @@ const renderTimeline = () => {
   focusBlocks.forEach((item) => {
     const row = document.createElement("div");
     row.classList.add("new");
+    row.classList.toggle("is-complete", Boolean(item.completed));
 
     const timeStamp = document.createElement("span");
     timeStamp.textContent = item.time;
@@ -430,6 +441,11 @@ const renderTimeline = () => {
     const actions = document.createElement("div");
     actions.className = "block-actions";
 
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.textContent = item.completed ? "Undo" : "Complete";
+    toggle.addEventListener("click", () => toggleBlockCompletion(item.id));
+
     const edit = document.createElement("button");
     edit.type = "button";
     edit.className = "primary";
@@ -441,7 +457,7 @@ const renderTimeline = () => {
     remove.textContent = "Delete";
     remove.addEventListener("click", () => deleteBlock(item.id));
 
-    actions.append(edit, remove);
+    actions.append(toggle, edit, remove);
     row.append(timeStamp, label, actions);
     timeline.appendChild(row);
   });
@@ -463,6 +479,7 @@ const renderPlanner = () => {
   focusBlocks.forEach((item) => {
     const plannerItem = document.createElement("div");
     plannerItem.className = "block-item";
+    plannerItem.classList.toggle("is-complete", Boolean(item.completed));
 
     const title = document.createElement("strong");
     title.textContent = item.title;
@@ -476,6 +493,11 @@ const renderPlanner = () => {
     const actions = document.createElement("div");
     actions.className = "block-actions";
 
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.textContent = item.completed ? "Undo" : "Complete";
+    toggle.addEventListener("click", () => toggleBlockCompletion(item.id));
+
     const edit = document.createElement("button");
     edit.type = "button";
     edit.className = "primary";
@@ -487,7 +509,7 @@ const renderPlanner = () => {
     remove.textContent = "Delete";
     remove.addEventListener("click", () => deleteBlock(item.id));
 
-    actions.append(edit, remove);
+    actions.append(toggle, edit, remove);
     plannerItem.append(title, meta, actions);
     planner.appendChild(plannerItem);
   });
@@ -509,6 +531,7 @@ const renderBlockList = () => {
   focusBlocks.forEach((item) => {
     const entry = document.createElement("div");
     entry.className = "block-item";
+    entry.classList.toggle("is-complete", Boolean(item.completed));
 
     const title = document.createElement("strong");
     title.textContent = item.title;
@@ -522,6 +545,11 @@ const renderBlockList = () => {
     const actions = document.createElement("div");
     actions.className = "block-actions";
 
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.textContent = item.completed ? "Undo" : "Complete";
+    toggle.addEventListener("click", () => toggleBlockCompletion(item.id));
+
     const edit = document.createElement("button");
     edit.type = "button";
     edit.className = "primary";
@@ -533,7 +561,7 @@ const renderBlockList = () => {
     remove.textContent = "Delete";
     remove.addEventListener("click", () => deleteBlock(item.id));
 
-    actions.append(edit, remove);
+    actions.append(toggle, edit, remove);
     entry.append(title, meta, actions);
     blockList.appendChild(entry);
   });
@@ -574,10 +602,20 @@ const renderAssignmentList = () => {
     const totalMinutes = focusBlocks
       .filter((block) => block.assignmentId === assignment.id)
       .reduce((sum, block) => sum + Number(block.duration || 0), 0);
+    const completedMinutes = focusBlocks
+      .filter((block) => block.assignmentId === assignment.id && block.completed)
+      .reduce((sum, block) => sum + Number(block.duration || 0), 0);
     const estimatedMinutes = Number(assignment.hours || 0) * 60;
+    const completionPct =
+      estimatedMinutes > 0
+        ? Math.min(100, Math.round((completedMinutes / estimatedMinutes) * 100))
+        : 0;
 
     const card = document.createElement("div");
     card.className = "assignment-card";
+    if (completionPct === 100 && totalMinutes > 0) {
+      card.classList.add("is-complete");
+    }
 
     const title = document.createElement("h4");
     title.textContent = assignment.title;
@@ -586,7 +624,7 @@ const renderAssignmentList = () => {
     meta.className = "assignment-meta";
     meta.textContent = `Due ${assignment.due} · Est ${assignment.hours}h · Scheduled ${Math.round(
       totalMinutes
-    )}m`;
+    )}m · Completed ${Math.round(completedMinutes)}m (${completionPct}%)`;
 
     const actions = document.createElement("div");
     actions.className = "block-actions";
@@ -623,6 +661,16 @@ const deleteBlock = (id) => {
   renderAll();
 };
 
+const toggleBlockCompletion = (id) => {
+  focusBlocks = focusBlocks.map((block) =>
+    block.id === id
+      ? { ...block, completed: !block.completed, completedAt: Date.now() }
+      : block
+  );
+  saveBlocks(focusBlocks);
+  renderAll();
+};
+
 const deleteAssignment = (id) => {
   assignments = assignments.filter((assignment) => assignment.id !== id);
   focusBlocks = focusBlocks.map((block) =>
@@ -648,6 +696,7 @@ focusForm?.addEventListener("submit", (event) => {
   const assignmentMatch = assignments.find(
     (assignment) => assignment.id === assignmentId
   );
+  const completed = focusCompleted ? focusCompleted.checked : false;
 
   const block = {
     id: focusIdField?.value || crypto.randomUUID?.() || String(Date.now()),
@@ -659,6 +708,7 @@ focusForm?.addEventListener("submit", (event) => {
     notes,
     assignmentId,
     assignmentTitle: assignmentMatch ? assignmentMatch.title : "",
+    completed,
     createdAt: Date.now(),
   };
 
