@@ -25,9 +25,10 @@
         <a href="insights.html">Insights</a>
       </nav>
       <div class="profile">
-        <p>Demo Developer</p>
-        <span id="last-sync">Last sync: 2 min</span>
+        <p id="profile-name">Signed out</p>
+        <span id="last-sync">Last sync: none</span>
       </div>
+      <button class="ghost logout" id="logout">Log out</button>
     </aside>
 
     <main class="dashboard">
@@ -45,89 +46,46 @@
       <section class="grid">
         <article class="card highlight" id="insights">
           <h2>Today's Execution Map</h2>
-          <p>Fluid Time has auto-injected three focus blocks based on live gaps.</p>
+          <p>Focus blocks will appear here once you schedule them.</p>
           <div class="timeline" id="timeline">
-            <div>
-              <span>8:10</span>
-              <strong>Physics: Momentum Focus</strong>
-            </div>
-            <div>
-              <span>11:30</span>
-              <strong>Calculus: Limits Drill</strong>
-            </div>
-            <div>
-              <span>18:00</span>
-              <strong>AP Lit: Synthesis Focus</strong>
-            </div>
+            <div class="empty">No focus blocks yet.</div>
           </div>
         </article>
 
         <article class="card">
           <h3>Calendar Intake</h3>
-          <p>Commitments queued for scheduling.</p>
-          <p class="sync-status" id="sync-status">Last intake: 12m ago</p>
-          <ul id="intake-list">
-            <li>AP Lit essay · Due Friday</li>
-            <li>Varsity training · 4 sessions</li>
-            <li>Calculus quiz · Thursday</li>
-          </ul>
+          <p>Commitments will appear after you add them.</p>
+          <p class="sync-status" id="sync-status">Last intake: none</p>
+          <ul id="intake-list"></ul>
         </article>
 
         <article class="card">
           <h3>Priority Stack</h3>
-          <p>Highest-impact work queued this week.</p>
+          <p>Highest-impact work will populate here.</p>
           <div class="graph">
-            <span>Momentum Focus</span>
-            <span>Calculus Drill</span>
-            <span>AP Lit Draft</span>
-            <span>Recovery Block</span>
+            <span>No priorities yet</span>
           </div>
         </article>
 
         <article class="card wide" id="vector">
           <h3>Vector Planner</h3>
-          <p>Adaptive schedule updated in real time.</p>
+          <p>Adaptive schedule will update as you plan.</p>
           <div class="planner">
-            <div>
-              <span>Mon</span>
-              <strong>Targeted Focus · Physics</strong>
-            </div>
-            <div>
-              <span>Tue</span>
-              <strong>Diagnostics · Algebra</strong>
-            </div>
-            <div>
-              <span>Wed</span>
-              <strong>Recovery Block · Humanities</strong>
-            </div>
+            <div class="empty">No focus blocks scheduled yet.</div>
           </div>
         </article>
 
         <article class="card">
           <h3>Alerts</h3>
-          <p>Execution risks detected.</p>
-          <div class="alert">
-            <span>⚡</span>
-            <div>
-              <strong>Physics gap widening</strong>
-              <p>Momentum nexus unresolved for 48h.</p>
-            </div>
-          </div>
-          <div class="alert">
-            <span>⏱</span>
-            <div>
-              <strong>Schedule conflict</strong>
-              <p>Varsity training overlaps with focus block.</p>
-            </div>
-          </div>
+          <p>No alerts yet.</p>
         </article>
 
         <article class="card">
           <h3>Execution Score</h3>
-          <p>Closed-loop performance index.</p>
+          <p>Score appears after your first week.</p>
           <div class="score">
-            <strong>92</strong>
-            <span>+6 this week</span>
+            <strong>--</strong>
+            <span>No data yet</span>
           </div>
         </article>
       </section>

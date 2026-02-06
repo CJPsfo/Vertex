@@ -106,23 +106,30 @@ body {
   color: var(--muted);
 }
 
-.demo-creds {
-  display: grid;
-  gap: 12px;
-  padding: 16px;
-  border-radius: 16px;
+.mode-toggle {
+  display: inline-flex;
+  gap: 8px;
+  padding: 6px;
+  border-radius: 999px;
   background: var(--surface-2);
   border: 1px solid var(--line);
   margin-bottom: 20px;
 }
 
-.demo-label {
-  display: block;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+.mode {
+  border: none;
+  background: transparent;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-weight: 600;
   color: var(--muted);
-  margin-bottom: 6px;
+  cursor: pointer;
+}
+
+.mode.active {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 12px 22px rgba(27, 91, 255, 0.2);
 }
 
 .login-form {

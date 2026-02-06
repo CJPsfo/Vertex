@@ -24,36 +24,16 @@
           A closed-loop calendar engine connecting priorities to real-time
           academic execution.
         </p>
-        <div class="signal">
-          <div>
-            <span class="signal-label">Loop status</span>
-            <strong>Stable</strong>
-          </div>
-          <div>
-            <span class="signal-label">Active nodes</span>
-            <strong>2</strong>
-          </div>
-          <div>
-            <span class="signal-label">Live focus blocks</span>
-            <strong>18</strong>
-          </div>
-        </div>
       </section>
 
       <section class="panel">
         <div class="panel-head">
-          <h2>Welcome back</h2>
-          <p>Use the demo credentials below to access the interface.</p>
+          <h2>Welcome</h2>
+          <p>Create your single-user account or sign in below.</p>
         </div>
-        <div class="demo-creds">
-          <div>
-            <span class="demo-label">Demo email</span>
-            <strong>demo@vertex.edu</strong>
-          </div>
-          <div>
-            <span class="demo-label">Demo password</span>
-            <strong>vertex-demo</strong>
-          </div>
+        <div class="mode-toggle">
+          <button class="mode active" type="button" data-mode="login">Sign in</button>
+          <button class="mode" type="button" data-mode="signup">Create account</button>
         </div>
         <form id="login-form" class="login-form">
           <label for="email">Email</label>
@@ -76,8 +56,8 @@
             required
           />
 
-          <button type="submit">Enter the Interface</button>
-          <p id="status" class="status">Test access only. No data is stored.</p>
+          <button type="submit" id="submit-button">Enter the Interface</button>
+          <p id="status" class="status">Single-user mode. First signup wins.</p>
         </form>
         <div class="panel-footer">
           <a href="index.html">Return to marketing site</a>

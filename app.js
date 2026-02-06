@@ -8,37 +8,18 @@ const timeline = document.querySelector("#timeline");
 const revealItems = document.querySelectorAll(".reveal");
 const calendarGrid = document.querySelector("#calendar-grid");
 const calendarTabs = document.querySelectorAll("[data-view]");
+const profileName = document.querySelector("#profile-name");
+const logoutButton = document.querySelector("#logout");
 const navLinks = document.querySelectorAll(".sidebar nav a");
 
 const formatTime = (date) =>
   date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
 const calendarData = {
-  day: [
-    { label: "08:10 Physics Focus", level: "high" },
-    { label: "11:30 Calculus Drill", level: "high" },
-    { label: "18:00 Recovery Block", level: "medium" },
-    { label: "Evening Review", level: "low" },
-  ],
-  week: [
-    { label: "Mon: Physics Focus", level: "high" },
-    { label: "Tue: Calculus Drill", level: "high" },
-    { label: "Wed: AP Lit Draft", level: "medium" },
-    { label: "Thu: Quiz Prep", level: "medium" },
-    { label: "Fri: Recovery", level: "low" },
-  ],
-  month: [
-    { label: "Focus Cycle A", level: "high" },
-    { label: "Midterm Block", level: "high" },
-    { label: "Writing Milestones", level: "medium" },
-    { label: "Weekly Recovery", level: "low" },
-  ],
-  year: [
-    { label: "Fall Exams", level: "high" },
-    { label: "AP Review", level: "high" },
-    { label: "Season Training", level: "medium" },
-    { label: "Flex Buffer", level: "low" },
-  ],
+  day: [],
+  week: [],
+  month: [],
+  year: [],
 };
 
 const calendarCells = {
@@ -84,12 +65,19 @@ const renderCalendar = (view) => {
       levelThreshold[view].includes(item.level)
     );
 
-    items.forEach((item) => {
-      const entry = document.createElement("div");
-      entry.className = `calendar-item ${item.level}`;
-      entry.textContent = item.label;
-      cell.appendChild(entry);
-    });
+    if (!items.length) {
+      const empty = document.createElement("div");
+      empty.className = "calendar-item low";
+      empty.textContent = "No focus blocks yet";
+      cell.appendChild(empty);
+    } else {
+      items.forEach((item) => {
+        const entry = document.createElement("div");
+        entry.className = `calendar-item ${item.level}`;
+        entry.textContent = item.label;
+        cell.appendChild(entry);
+      });
+    }
 
     calendarGrid.appendChild(cell);
   });
@@ -147,6 +135,31 @@ navLinks.forEach((link) => {
   });
 });
 
+const ensureSession = async () => {
+  try {
+    const response = await fetch("/api/session");
+    const payload = await response.json();
+    if (!payload.authenticated) {
+      window.location.href = "login.html";
+      return;
+    }
+
+    if (profileName) {
+      profileName.textContent = payload.email;
+    }
+  } catch (error) {
+    window.location.href = "login.html";
+  }
+};
+
+logoutButton?.addEventListener("click", async () => {
+  try {
+    await fetch("/api/logout", { method: "POST" });
+  } finally {
+    window.location.href = "login.html";
+  }
+});
+
 syncButton?.addEventListener("click", () => {
   syncButton.textContent = "Syncing...";
   syncButton.disabled = true;
@@ -161,7 +174,7 @@ syncButton?.addEventListener("click", () => {
 
     if (intakeList) {
       const item = document.createElement("li");
-      item.textContent = `Worksheet scan · ${formatTime(now)}`;
+      item.textContent = `Availability sync · ${formatTime(now)}`;
       intakeList.prepend(item);
     }
 
@@ -174,6 +187,11 @@ focusButton?.addEventListener("click", () => {
   const now = new Date();
   if (!timeline) {
     return;
+  }
+
+  const empty = timeline.querySelector(".empty");
+  if (empty) {
+    empty.remove();
   }
 
   const row = document.createElement("div");
@@ -192,3 +210,5 @@ focusButton?.addEventListener("click", () => {
 setTimeout(() => {
   highlight?.classList.add("pulse");
 }, 500);
+
+ensureSession();
